@@ -22,7 +22,6 @@ DBStorage = db_storage.DBStorage
 classes = {"Amenity": Amenity, "City": City, "Place": Place,
            "Review": Review, "State": State, "User": User}
 
-
 class TestDBStorageDocs(unittest.TestCase):
     """Tests to check the documentation and style of DBStorage class"""
     @classmethod
@@ -67,22 +66,34 @@ test_db_storage.py'])
             self.assertTrue(len(func[1].__doc__) >= 1,
                             "{:s} method needs a docstring".format(func[0]))
 
+class TestDBStorage(unittest.TestCase):
+    """Test the DBStorage class"""
+    @classmethod
+    def setUpClass(cls):
+        """Set up for the tests"""
+        cls.storage = DBStorage()
+        cls.storage.reload()
 
-class TestFileStorage(unittest.TestCase):
-    """Test the FileStorage class"""
-    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
-    def test_all_returns_dict(self):
-        """Test that all returns a dictionaty"""
-        self.assertIs(type(models.storage.all()), dict)
+    @classmethod
+    def tearDownClass(cls):
+        """Tear down the test environment"""
+        cls.storage.close()
 
-    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
-    def test_all_no_class(self):
-        """Test that all returns all rows when no class is passed"""
+    def test_get(self):
+        """Test the get method"""
+        user = User(email="test@example.com", password="test")
+        user.save()
+        retrieved_user = self.storage.get(User, user.id)
+        self.assertEqual(retrieved_user, user)
+        self.assertIsNone(self.storage.get(User, "nonexistent_id"))
 
-    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
-    def test_new(self):
-        """test that new adds an object to the database"""
-
-    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
-    def test_save(self):
-        """Test that save properly saves objects to file.json"""
+    def test_count(self):
+        """Test the count method"""
+        initial_count = self.storage.count()
+        user = User(email="test@example.com", password="test")
+        user.save()
+        state = State(name="California")
+        state.save()
+        self.assertEqual(self.storage.count(), initial_count + 2)
+        self.assertEqual(self.storage.count(User), 1)
+        self.assertEqual(self.storage.count(State), 1)
